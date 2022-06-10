@@ -40,3 +40,6 @@ vignettes/*.pdf
 
 # Exempt data from git
 /DATA/
+
+# Exempt .DS_Store
+.DS_Store
