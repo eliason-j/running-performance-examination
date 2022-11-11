@@ -43,3 +43,5 @@ vignettes/*.pdf
 
 # Exempt .DS_Store
 .DS_Store
+
+.Rprofile

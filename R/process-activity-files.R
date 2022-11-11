@@ -9,7 +9,7 @@ library(tidyverse)
 library(trackeR)
 library(fitdc)
 
-export_date <- "2022-06-08"
+export_date <- "2022-11-09"
 PATH_IN <- str_c(getwd(), "/DATA/export-", export_date, "/")
 
 activity_names <- list.files(str_c(PATH_IN, "activities/"))
@@ -19,7 +19,7 @@ compressed_record_names <- activity_names[str_sub(activity_names,-6,-1) == "fit.
 
 # unzip those files ------------------------------------------------------
 
-str_c(PATH_IN,"/activities", "/", compressed_record_names) |> 
+str_c(PATH_IN,"activities", "/", compressed_record_names) |> 
   map(~ R.utils::gunzip(.x, remove = F))
 
 # refresh activity names
@@ -37,7 +37,7 @@ unpack_fit <- function(fit_name){
   ) %>% FITfileR::records()
   
   if(length(record) > 1) {
-    record <- record %>% bind_rows() %>% mutate(activity_id = i, filename = fit_name)
+    record <- record %>% bind_rows() %>% mutate(filename = fit_name)
   }
   
   return(record)
@@ -46,6 +46,7 @@ unpack_fit <- function(fit_name){
 fit_records <- uncompressed_fit_names |> 
   map(unpack_fit) |> 
   bind_rows() |> 
+  rownames_to_column(var = "activity_name") |> 
   arrange(timestamp)
 
 # read .gpx files (import step 2/2) ---------------------------------------
@@ -94,6 +95,8 @@ records <- bind_rows(
 
 # cleanup
 rm(list = setdiff(ls(), c("records", "PATH_IN", "export_date")))
+
+# dir.create(str_c(getwd(),"/DATA/","results-",export_date))
 
 records %>% 
   write_csv(

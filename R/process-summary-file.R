@@ -12,7 +12,7 @@ library(lubridate)
 
 readRenviron("~/.Renviron")
 
-export_date <- "2022-06-08"
+export_date <- "2022-11-09"
 PATH_IN <- str_c(getwd(), "/DATA/")
 
 # unit conversion ---------------------------------------------------------
@@ -105,7 +105,7 @@ get_hist_weather <- function(id, key = Sys.getenv("OWM_API_KEY")){
 
 # read and clean ----------------------------------------------------------
 
-records <- read_csv(str_c(PATH_IN,"results-2022-06-08/processed-activity-files.csv"))
+records <- read_csv(str_c(PATH_IN,"results-",export_date,"/processed-activity-files.csv"))
 
 record_key_raw <- read_csv(str_c(PATH_IN, "export-", export_date, "/", "activities.csv")) %>% 
   janitor::clean_names() %>% 
@@ -136,11 +136,14 @@ ids_interval <- c(
     pull(activity_id) |> 
     as.character(),
   record_key_raw |> 
-    filter(str_detect(activity_name, regex('run club', ignore_case = T))) |> 
+    filter(str_detect(activity_name, regex('run club', ignore_case = T)) | str_detect(activity_description, regex('run club', ignore_case = T))) |> 
     pull(activity_id) |> 
     as.character(),
   c(
-    "4626041732" # "two minutes between laps"
+    "4626041732", # "two minutes between laps"
+    "1729060155", # mile repeats
+    "6794901402", # broken run club
+    "6215889944" # 60s between miles
   )
 ) |> 
   unique()
@@ -155,7 +158,13 @@ ids_short <- c(
 
 ids_walk_or_hike <- c(
   "1812636545", # lake blanche hike (coded incorrectly)
-  "3324264305" # phone call with wade--walk not run
+  "3324264305", # phone call with wade--walk not run
+  "7329897519", # first three with lily
+  "7356911952", # with lily again
+  "7515381326", # great falls
+  "7669566211", # great falls
+  "7858712164" # alternate walk run in hyde park with elise
+  
 )
 
 
@@ -230,6 +239,7 @@ record_key <-
       filename %in% c("2126965824.fit", "2138729101.fit") ~ "Utah", # (no beach here, though?)
       T ~ state
     ),
+    state = ifelse(is.na(state), "Intl", state),
     state_group = ifelse(state == "Utah", "Utah", "Other")
   ) |> 
   
@@ -242,7 +252,10 @@ record_key <-
         format(rdatetime_utc, tz="America/New_York",usetz=TRUE),
       state %in% c("California") ~
         format(rdatetime_utc, tz="America/Los_Angeles",usetz=TRUE),
-      T ~ format(rdatetime_utc, tz="America/New_York",usetz=TRUE)
+      between(lubridate::as_date(rdatetime_utc), lubridate::as_date("2022-06-08"),lubridate::as_date("2022-06-12")) ~ format(rdatetime_utc, tz="America/New_York",usetz=TRUE), # see note about edge cases on the beach above
+      between(lubridate::as_date(rdatetime_utc), lubridate::as_date("2022-09-01"),lubridate::as_date("2022-09-10")) ~ format(rdatetime_utc, tz="Asia/Istanbul",usetz=TRUE), # hacking intl ones until i find a better option
+      between(lubridate::as_date(rdatetime_utc), lubridate::as_date("2022-09-17"),lubridate::as_date("2022-11-11")) ~ format(rdatetime_utc, tz="Europe/London",usetz=TRUE),
+      T ~ NA_character_
     ) |> lubridate::as_datetime(),
     
     rdate = lubridate::date(rdatetime_local),
@@ -314,5 +327,5 @@ record_key |>
 
 final %>%
   write_csv(
-    str_c(PATH_IN,"results-2022-06-08/",today(),"-processed-activity-summary.csv")
+    # str_c(PATH_IN,"results-",export_date,"/",today(),"-processed-activity-summary.csv")
   )
